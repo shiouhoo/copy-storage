@@ -1,0 +1,14 @@
+{
+    "name": "招商",
+    "description": "招商本地token",
+    "version": "1.0",
+    "manifest_version": 3,
+    "permissions": [
+        "storage",
+        "activeTab",
+        "scripting"
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    }
+}
