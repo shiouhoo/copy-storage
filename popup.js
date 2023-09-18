@@ -9,18 +9,43 @@ const init = async () => {
         function: getTargetPageIframe
     });
     chrome.storage.sync.get('iframeSrcArray', ({ iframeSrcArray }) => {
-        let htmlStr = ''
-        let target = $('#address').val()
-        console.log(target)
         for (let src of iframeSrcArray) {
-            htmlStr += `<a src=${src.replace(/http:\/\/[0-9]{0,3}\.[0-9]{0,3}\.[0-9]{0,3}\.[0-9]{0,3}/, target)}><button type="button" class="list-group-item list-group-item-action">${src}</button></a>`
+            const htmlStr = `<button type="button" class="list-group-item list-group-item-action">${src}</button>`
+            const dom = $(htmlStr).on('click', function () {
+                let target = $('#address').val()
+                function changeBackgroundColor() {
+                    document.body.style.backgroundColor = getUserColor();
+                }
+                chrome.tabs.create(
+                    {
+                        url: this.innerText.replace(/http:\/\/[0-9]{0,4}\.[0-9]{0,4}\.[0-9]{0,4}\.[0-9]{0,4}[:\d]{0,5}/, 'http://' + target),
+                        active: false,
+                    },
+                    async function (tab) {
+                        // 向目标页面里注入js方法
+                        alert(tab.id)
+                        chrome.storage.sync.set({
+                            setLocalStorageId: tab.id
+                        });
+                    }
+                )
+            })
+            $('.iframe-list').append(dom);
         }
-        console.log(htmlStr)
-        $('.iframe-list').html(htmlStr)
     })
 };
 init()
 // 注入的方法
+function getWindowInfo() {
+    getTargetPageIframe()
+    getLocalStorage()
+}
+
+function getLocalStorage() {
+    chrome.storage.sync.set({ ai_token: JSON.stringify(localStorage.getItem('ai_token')) })
+    chrome.storage.sync.set({ author_token: JSON.stringify(localStorage.getItem('author_token')) })
+}
+
 function getTargetPageIframe() {
     // 获取所有的iframe元素
     var iframes = document.querySelectorAll('iframe');
