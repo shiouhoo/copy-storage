@@ -1,39 +1,21 @@
 const btn = $('#btn')
 const pageZS = $('#pageZS')
 const target = $('#address')
-// 保存输入
-chrome.storage.sync.get('target', ({ target }) => {
-    if (target) {
-        $('#address').val(target)
-    }
-})
-$('#address').on('change', () => {
-    chrome.storage.sync.set({ target: $('#address').val() });
-})
-chrome.storage.sync.get('cookieCheck', ({ cookieCheck }) => {
-    $('#cookieCheck').prop('checked', cookieCheck);
-})
-$('#cookieCheck').on('change', () => {
-    chrome.storage.sync.set({ cookieCheck: $('#cookieCheck:checked').val() || false });
-})
 
-chrome.storage.sync.get('localStorageCheck', ({ localStorageCheck }) => {
-    $('#localStorageCheck').prop('checked', localStorageCheck);
-})
-$('#localStorageCheck').on('change', () => {
-    chrome.storage.sync.set({ localStorageCheck: $('#localStorageCheck:checked').val() || false });
-})
-
-const init = async () => {
-    chrome.storage.sync.set({ _localStorage: null })
+async function init() {
+    chrome.storage.sync.set({ _localStorage: null })// 获取信息
     // 因为需要先准确地获取当前的页面才能注入js，所以这里需要使用同步函数，await
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab.url === 'edge://newtab/') {
+        $('.main').html('空标签页无法操作')
+        return;
+    }
+    await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: getWindowInfo,
+        args: [true]
+    });
     if (tab.url.includes('http://192.168.211.166/') || tab.url.includes('http://192.168.210.166/')) {
-        await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            function: getWindowInfo,
-            args: [true]
-        });
         chrome.storage.sync.get('iframeSrcArray', ({ iframeSrcArray }) => {
             if (!iframeSrcArray.length) return;
             pageZS.show()
@@ -80,15 +62,10 @@ const init = async () => {
             }
         })
     } else {
-        pageZS.hide()
+        pageZS.hide();
     }
-    let timer = []
+    let timer = [];
     $('#copy').on('click', async () => {
-        // 获取信息
-        await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            function: getWindowInfo
-        });
         let tabs = await chrome.tabs.query({});
         for (const tab of tabs) {
             if (tab.url.includes(target.val())) {
@@ -111,9 +88,9 @@ const init = async () => {
         timer[1] = setTimeout(() => {
             $('#toast-notarget').hide()
         }, 3000)
-    })
-};
-init()
+    });
+}
+init();
 
 async function setWindowInfo(setCookie, setLocalStorage) {
     if (setLocalStorage === 'on') {
