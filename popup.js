@@ -1,4 +1,7 @@
 const btn = $('#btn')
+const pageZS = $('#pageZS')
+const target = $('#address')
+// 保存输入
 chrome.storage.sync.get('target', ({ target }) => {
     if (target) {
         $('#address').val(target)
@@ -7,55 +10,123 @@ chrome.storage.sync.get('target', ({ target }) => {
 $('#address').on('change', () => {
     chrome.storage.sync.set({ target: $('#address').val() });
 })
+chrome.storage.sync.get('cookieCheck', ({ cookieCheck }) => {
+    $('#cookieCheck').prop('checked', cookieCheck);
+})
+$('#cookieCheck').on('change', () => {
+    chrome.storage.sync.set({ cookieCheck: $('#cookieCheck:checked').val() || false });
+})
+
+chrome.storage.sync.get('localStorageCheck', ({ localStorageCheck }) => {
+    $('#localStorageCheck').prop('checked', localStorageCheck);
+})
+$('#localStorageCheck').on('change', () => {
+    chrome.storage.sync.set({ localStorageCheck: $('#localStorageCheck:checked').val() || false });
+})
+
 const init = async () => {
-    // 获取当前打开的标签页面
+    chrome.storage.sync.set({ _localStorage: null })
     // 因为需要先准确地获取当前的页面才能注入js，所以这里需要使用同步函数，await
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    // 向目标页面里注入js方法
-    await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        function: getWindowInfo
-    });
-    chrome.storage.sync.get('iframeSrcArray', ({ iframeSrcArray }) => {
-        for (let iframe of iframeSrcArray) {
-            const src = iframe.src
-            const htmlStr = `<button type="button" class="list-group-item list-group-item-action">${src}</button>`
-            const dom = $(htmlStr).on('click', function () {
-                let target = $('#address').val()
-                function changeBackgroundColor() {
-                    document.body.style.backgroundColor = getUserColor();
-                }
-                chrome.tabs.create(
-                    {
-                        url: this.innerText.replace('jzzsweb', 'jzzs_web_yingkou').replace('rwsc-web-chengdu', 'rwscweb').replace(/http:\/\/[0-9]{0,4}\.[0-9]{0,4}\.[0-9]{0,4}\.[0-9]{0,4}[:\d]{0,5}/, 'http://' + target),
-                        active: false,
-                    },
-                    function (tab) {
-                        // 向目标页面里注入js方法
-                        chrome.storage.sync.set({
-                            setLocalStorageId: tab.id
-                        });
+    if (tab.url.includes('http://192.168.211.166/') || tab.url.includes('http://192.168.210.166/')) {
+        await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            function: getWindowInfo,
+            args: [true]
+        });
+        chrome.storage.sync.get('iframeSrcArray', ({ iframeSrcArray }) => {
+            if (!iframeSrcArray.length) return;
+            pageZS.show()
+            for (let iframe of iframeSrcArray) {
+                const src = iframe.src
+                const htmlStr = `<button type="button" class="list-group-item list-group-item-action">${src}</button>`
+                const dom = $(htmlStr).on('click', function () {
+                    let target = $('#address').val()
+                    function changeBackgroundColor() {
+                        document.body.style.backgroundColor = getUserColor();
                     }
-                )
-            }).on('mouseenter', function () {
-                chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    function: setIfromeHover,
-                    args: [iframe.id, true]
+                    chrome.tabs.create(
+                        {
+                            url: this.innerText.replace('jzzsweb', 'jzzs_web_yingkou').replace('rwsc-web-chengdu', 'rwscweb').replace(/http:\/\/[0-9]{0,4}\.[0-9]{0,4}\.[0-9]{0,4}\.[0-9]{0,4}[:\d]{0,5}/, target),
+                            active: false,
+                        },
+                        async function (tab) {
+                            // 注入
+                            chrome.scripting.executeScript({
+                                target: { tabId: tab.id },
+                                function: setWindowInfo,
+                                args: [$('#cookieCheck:checked').val() || false, $('#localStorageCheck:checked').val() || false]
+                            });
+                            chrome.scripting.executeScript({
+                                target: { tabId: tab.id },
+                                function: () => location.reload(),
+                            });
+                        }
+                    )
+                }).on('mouseenter', function () {
+                    chrome.scripting.executeScript({
+                        target: { tabId: tab.id },
+                        function: setIfromeHover,
+                        args: [iframe.id, true]
+                    });
+                }).on('mouseleave', function () {
+                    chrome.scripting.executeScript({
+                        target: { tabId: tab.id },
+                        function: setIfromeHover,
+                        args: [iframe.id, false]
+                    });
                 });
-            }).on('mouseleave', function () {
-                chrome.scripting.executeScript({
+                $('.iframe-list').append(dom);
+            }
+        })
+    } else {
+        pageZS.hide()
+    }
+    let timer = []
+    $('#copy').on('click', async () => {
+        // 获取信息
+        await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            function: getWindowInfo
+        });
+        let tabs = await chrome.tabs.query({});
+        for (const tab of tabs) {
+            if (tab.url.includes(target.val())) {
+                // 注入
+                await chrome.scripting.executeScript({
                     target: { tabId: tab.id },
-                    function: setIfromeHover,
-                    args: [iframe.id, false]
+                    function: setWindowInfo,
+                    args: [$('#cookieCheck:checked').val() || false, $('#localStorageCheck:checked').val() || false]
                 });
-            });
-            $('.iframe-list').append(dom);
+                if (timer[0]) clearTimeout(timer[0])
+                $('#toast-success').show()
+                timer[0] = setTimeout(() => {
+                    $('#toast-success').hide()
+                }, 3000)
+                return;
+            }
         }
+        if (timer[1]) clearTimeout(timer[1])
+        $('#toast-notarget').show()
+        timer[1] = setTimeout(() => {
+            $('#toast-notarget').hide()
+        }, 3000)
     })
 };
 init()
 
+async function setWindowInfo(setCookie, setLocalStorage) {
+    if (setLocalStorage === 'on') {
+        const { _localStorage } = await chrome.storage.sync.get('_localStorage')
+        for (const key in _localStorage) {
+            localStorage.setItem(key, _localStorage[key])
+        }
+    }
+    if (setCookie === 'on') {
+        const { _Cookies } = await chrome.storage.sync.get('_Cookies')
+        document.cookie = _Cookies
+    }
+}
 
 function setIfromeHover(id, isHover) {
 
@@ -90,11 +161,19 @@ function setIfromeHover(id, isHover) {
 }
 
 // 注入的方法
-function getWindowInfo() {
+async function getWindowInfo(isZs = false) {
 
     function getLocalStorage() {
-        chrome.storage.sync.set({ AI_token: localStorage.getItem('AI_token') || '' })
-        chrome.storage.sync.set({ Author_token: localStorage.getItem('Author_token') || '' })
+        const obj = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            obj[key] = localStorage.getItem(key);
+        }
+        chrome.storage.sync.set({ _localStorage: obj })
+    }
+
+    function getCookies() {
+        chrome.storage.sync.set({ _Cookies: document.cookie })
     }
 
     function getTargetPageIframe() {
@@ -129,6 +208,14 @@ function getWindowInfo() {
 
         chrome.storage.sync.set({ iframeSrcArray });
     };
+    const { localStorageCheck } = await chrome.storage.sync.get('localStorageCheck')
+    if (localStorageCheck === 'on') {
+        getLocalStorage()
+    }
     getLocalStorage()
-    getTargetPageIframe()
+    const { cookieCheck } = await chrome.storage.sync.get('cookieCheck')
+    if (cookieCheck === 'on') {
+        getCookies()
+    }
+    isZs && getTargetPageIframe()
 }
