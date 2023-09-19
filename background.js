@@ -11,8 +11,9 @@ chrome.tabs.onCreated.addListener(function (tab) {
                 func: async () => {
                     const { AI_token } = await chrome.storage.sync.get('AI_token')
                     const { Author_token } = await chrome.storage.sync.get('Author_token')
-                    localStorage.setItem('Ai_token', AI_token)
+                    localStorage.setItem('AI_token', AI_token)
                     localStorage.setItem('Author_token', Author_token)
+                    location.reload()
                 }
             });
         }

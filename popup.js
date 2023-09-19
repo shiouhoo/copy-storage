@@ -1,4 +1,12 @@
 const btn = $('#btn')
+chrome.storage.sync.get('target', ({ target }) => {
+    if (target) {
+        $('#address').val(target)
+    }
+})
+$('#address').on('change', () => {
+    chrome.storage.sync.set({ target: $('#address').val() });
+})
 const init = async () => {
     // 获取当前打开的标签页面
     // 因为需要先准确地获取当前的页面才能注入js，所以这里需要使用同步函数，await
@@ -9,7 +17,8 @@ const init = async () => {
         function: getWindowInfo
     });
     chrome.storage.sync.get('iframeSrcArray', ({ iframeSrcArray }) => {
-        for (let src of iframeSrcArray) {
+        for (let iframe of iframeSrcArray) {
+            const src = iframe.src
             const htmlStr = `<button type="button" class="list-group-item list-group-item-action">${src}</button>`
             const dom = $(htmlStr).on('click', function () {
                 let target = $('#address').val()
@@ -18,7 +27,7 @@ const init = async () => {
                 }
                 chrome.tabs.create(
                     {
-                        url: this.innerText.replace(/http:\/\/[0-9]{0,4}\.[0-9]{0,4}\.[0-9]{0,4}\.[0-9]{0,4}[:\d]{0,5}/, 'http://' + target),
+                        url: this.innerText.replace('jzzsweb', 'jzzs_web_yingkou').replace('rwsc-web-chengdu', 'rwscweb').replace(/http:\/\/[0-9]{0,4}\.[0-9]{0,4}\.[0-9]{0,4}\.[0-9]{0,4}[:\d]{0,5}/, 'http://' + target),
                         active: false,
                     },
                     function (tab) {
@@ -28,7 +37,19 @@ const init = async () => {
                         });
                     }
                 )
-            })
+            }).on('mouseenter', function () {
+                chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    function: setIfromeHover,
+                    args: [iframe.id, true]
+                });
+            }).on('mouseleave', function () {
+                chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    function: setIfromeHover,
+                    args: [iframe.id, false]
+                });
+            });
             $('.iframe-list').append(dom);
         }
     })
@@ -36,12 +57,44 @@ const init = async () => {
 init()
 
 
+function setIfromeHover(id, isHover) {
+
+    function getAllIframeSrc(iframes, docu) {
+        iframes.forEach(function (iframe) {
+            if (!iframe.id) return;
+            if (id === iframe.id) {
+                if (isHover) {
+                    const dom = docu.createElement('div')
+                    dom.setAttribute('id', 'mask')
+                    dom.style = 'width:100%;height:100%;background-color:rgba(85,125,171,0.6);position: fixed;z-index:999999;top:0;left:0'
+                    docu.querySelector(`#${id}`).contentDocument.querySelector('body').append(dom)
+                } else {
+                    docu.querySelector(`#${id}`).contentDocument.querySelector('body>#mask').remove()
+                }
+                return;
+            }
+
+            // 获取嵌套iframe
+            var nestedIframes = iframe.contentDocument.querySelectorAll('iframe');
+
+            // 递归调用获取嵌套iframe的src
+            if (nestedIframes.length > 0) {
+                getAllIframeSrc(nestedIframes, iframe.contentDocument);
+            }
+        });
+    }
+
+    // 获取页面上所有的iframe元素
+    var topLevelIframes = document.querySelectorAll('iframe');
+    getAllIframeSrc(topLevelIframes, document);
+}
+
 // 注入的方法
 function getWindowInfo() {
 
     function getLocalStorage() {
-        chrome.storage.sync.set({ AI_token: localStorage.getItem('AI_token') || '12' })
-        chrome.storage.sync.set({ Author_token: localStorage.getItem('Author_token') || '123' })
+        chrome.storage.sync.set({ AI_token: localStorage.getItem('AI_token') || '' })
+        chrome.storage.sync.set({ Author_token: localStorage.getItem('Author_token') || '' })
     }
 
     function getTargetPageIframe() {
@@ -53,7 +106,10 @@ function getWindowInfo() {
             iframes.forEach(function (iframe) {
                 var src = iframe.contentDocument.location.href;
 
-                src && !src.includes('404') && !src.includes('about:blank') && iframeSrcArray.push(src); // 将src添加到数组中
+                src && !src.includes('404') && !src.includes('about:blank') && iframeSrcArray.push({
+                    id: iframe.id,
+                    src: src
+                }); // 将src添加到数组中
 
                 // 获取嵌套iframe
                 var nestedIframes = iframe.contentDocument.querySelectorAll('iframe');
