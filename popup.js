@@ -3,7 +3,9 @@ const pageZS = $('#pageZS')
 const target = $('#address')
 
 async function init() {
-    chrome.storage.sync.set({ _localStorage: null })// 获取信息
+    // chrome.storage.local.set({ _localStorage: null })
+    // chrome.storage.local.set({ _Cookies: null })
+    // chrome.storage.local.set({ iframeSrcArray: null })
     // 因为需要先准确地获取当前的页面才能注入js，所以这里需要使用同步函数，await
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab.url === 'edge://newtab/') {
@@ -16,7 +18,7 @@ async function init() {
         args: [true]
     });
     if (tab.url.includes('http://192.168.211.166/') || tab.url.includes('http://192.168.210.166/')) {
-        chrome.storage.sync.get('iframeSrcArray', ({ iframeSrcArray }) => {
+        chrome.storage.local.get('iframeSrcArray', ({ iframeSrcArray }) => {
             if (!iframeSrcArray.length) return;
             pageZS.show()
             for (let iframe of iframeSrcArray) {
@@ -64,6 +66,19 @@ async function init() {
     } else {
         pageZS.hide();
     }
+    // localStorageCheck展开项
+    const { _localStorage } = await chrome.storage.local.get('_localStorage')
+    let header = ''
+    for (let i in _localStorage) {
+        header += `<li> ${i} </li>`
+    }
+    $('#collapseLocalStorage .textarea-format-localstorage').before(`<ul class="collapse-header">${header}</ul>`)
+
+    const { textareaFormatLocalstorage } = await chrome.storage.local.get('textareaFormatLocalstorage')
+    const func = new Function(_localStorage, textareaFormatLocalstorage)
+    console.log(func(_localStorage));
+
+    // 复制按钮
     let timer = [];
     $('#copy').on('click', async () => {
         let tabs = await chrome.tabs.query({});
@@ -94,13 +109,13 @@ init();
 
 async function setWindowInfo(setCookie, setLocalStorage) {
     if (setLocalStorage === 'on') {
-        const { _localStorage } = await chrome.storage.sync.get('_localStorage')
+        const { _localStorage } = await chrome.storage.local.get('_localStorage')
         for (const key in _localStorage) {
             localStorage.setItem(key, _localStorage[key])
         }
     }
     if (setCookie === 'on') {
-        const { _Cookies } = await chrome.storage.sync.get('_Cookies')
+        const { _Cookies } = await chrome.storage.local.get('_Cookies')
         document.cookie = _Cookies
     }
 }
@@ -144,13 +159,14 @@ async function getWindowInfo(isZs = false) {
         const obj = {};
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
+            if (!key) continue;
             obj[key] = localStorage.getItem(key);
         }
-        chrome.storage.sync.set({ _localStorage: obj })
+        chrome.storage.local.set({ _localStorage: obj })
     }
 
     function getCookies() {
-        chrome.storage.sync.set({ _Cookies: document.cookie })
+        chrome.storage.local.set({ _Cookies: document.cookie })
     }
 
     function getTargetPageIframe() {
@@ -183,16 +199,9 @@ async function getWindowInfo(isZs = false) {
         // 调用函数开始获取src
         getAllIframeSrc(topLevelIframes);
 
-        chrome.storage.sync.set({ iframeSrcArray });
+        chrome.storage.local.set({ iframeSrcArray });
     };
-    const { localStorageCheck } = await chrome.storage.sync.get('localStorageCheck')
-    if (localStorageCheck === 'on') {
-        getLocalStorage()
-    }
     getLocalStorage()
-    const { cookieCheck } = await chrome.storage.sync.get('cookieCheck')
-    if (cookieCheck === 'on') {
-        getCookies()
-    }
+    getCookies()
     isZs && getTargetPageIframe()
 }

@@ -4,17 +4,17 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.tabs.onCreated.addListener(function (tab) {
-    chrome.storage.sync.get('setLocalStorageId', async ({ setLocalStorageId }) => {
-        if (setLocalStorageId === tab.id) {
-            chrome.scripting.executeScript({
-                target: { tabId: setLocalStorageId },
-                func: async () => {
-                    const { AI_token } = await chrome.storage.sync.get('AI_token')
-                    const { Author_token } = await chrome.storage.sync.get('Author_token')
+    chrome.storage.local.get('setLocalStorageId', alocal({ setLocalStorageId }) => {
+        if(setLocalStorageId === tab.id) {
+        chrome.scripting.executeScript({
+            target: { tabId: setLocalStorageId },
+            func: alocal() => {
+            const { AI_token } = await chrome.storage.local.get('AI_token')
+                    const { Author_token } = await chrome.storage.local.get('Author_token')
                     localStorage.setItem('AI_token', AI_token)
                     localStorage.setItem('Author_token', Author_token)
                     location.reload()
-                }
+        }
             });
         }
     })

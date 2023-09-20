@@ -1,23 +1,30 @@
 // target
 $('#address').on('change', () => {
-    chrome.storage.sync.set({ target: $('#address').val() });
+    chrome.storage.local.set({ target: $('#address').val() });
 })
-chrome.storage.sync.get('target', ({ target }) => {
+chrome.storage.local.get('target', ({ target }) => {
     if (target) {
         $('#address').val(target)
     }
 })
 // cookieCheck
-chrome.storage.sync.get('cookieCheck', ({ cookieCheck }) => {
+chrome.storage.local.get('cookieCheck', ({ cookieCheck }) => {
     $('#cookieCheck').prop('checked', cookieCheck);
 })
 $('#cookieCheck').on('change', () => {
-    chrome.storage.sync.set({ cookieCheck: $('#cookieCheck:checked').val() || false });
+    chrome.storage.local.set({ cookieCheck: $('#cookieCheck:checked').val() || false });
 })
 // localStorageCheck
-chrome.storage.sync.get('localStorageCheck', ({ localStorageCheck }) => {
+chrome.storage.local.get('localStorageCheck', ({ localStorageCheck }) => {
     $('#localStorageCheck').prop('checked', localStorageCheck);
 })
 $('#localStorageCheck').on('change', () => {
-    chrome.storage.sync.set({ localStorageCheck: $('#localStorageCheck:checked').val() || false });
+    chrome.storage.local.set({ localStorageCheck: $('#localStorageCheck:checked').val() || false });
+})
+// textarea-format-localstorage
+chrome.storage.local.get('textareaFormatLocalstorage', ({ textareaFormatLocalstorage }) => {
+    $('#textarea-format-localstorage').val(textareaFormatLocalstorage);
+})
+$('#textarea-format-localstorage').on('change', () => {
+    chrome.storage.local.set({ textareaFormatLocalstorage: $('#textarea-format-localstorage').val() });
 })
