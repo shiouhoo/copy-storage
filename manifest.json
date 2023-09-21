@@ -20,5 +20,10 @@
     },
     "background": {
         "service_worker": "background.js"
+    },
+    "sandbox": {
+        "pages": [
+            "sandbox.html"
+        ]
     }
 }

@@ -27,6 +27,8 @@
 
         .toast {
             margin-bottom: 20px;
+            position: fixed;
+            z-index: 9;
         }
 
         .absolute-left-center {
@@ -64,6 +66,7 @@
 </head>
 
 <body>
+    <iframe src="./sandbox.html" id="sandbox" style="display: none"></iframe>
     <div class="main">
         <div id="toast-success" class="toast align-items-center text-bg-primary border-0"
             role="alert" aria-live="assertive" aria-atomic="true">
@@ -75,6 +78,12 @@
             role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
                 <div class="toast-body"> 找不到目标窗口 </div>
+            </div>
+        </div>
+        <div id="toast-funcError" class="toast align-items-center text-bg-primary border-0"
+            role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body"> 格式化函数不正确 </div>
             </div>
         </div>
         <div class="input-group mb-3">
@@ -103,7 +112,8 @@
                     <div class="accordion-body">
                         <div class="textarea-format-localstorage">
                             <textarea class="form-control" id="textarea-format-localstorage"
-                                rows="5" value="return obj"></textarea>
+                                rows="5">return obj;
+                            </textarea>
                         </div>
                         <div class="tip">
                             上面是你的localStorage，你可以在输入框中对其进行格式化(直接编写函数体，一定要有返回值，obj为localstorage键值对)

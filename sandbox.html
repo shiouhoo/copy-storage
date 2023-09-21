@@ -1,0 +1,14 @@
+<html>
+<script>
+    window.addEventListener('message', async function (event) {
+        try {
+            const func = new Function('obj', event.data[0])
+            event.source.window.postMessage(func(event.data[1]), event.origin);
+        } catch (e) {
+            event.source.window.postMessage(e, event.origin);
+        }
+
+    });    
+</script>
+
+</html>

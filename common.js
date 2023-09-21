@@ -23,7 +23,11 @@ $('#localStorageCheck').on('change', () => {
 })
 // textarea-format-localstorage
 chrome.storage.local.get('textareaFormatLocalstorage', ({ textareaFormatLocalstorage }) => {
-    $('#textarea-format-localstorage').val(textareaFormatLocalstorage);
+    if (textareaFormatLocalstorage) {
+        $('#textarea-format-localstorage').val(textareaFormatLocalstorage)
+    } else {
+        chrome.storage.local.set({ textareaFormatLocalstorage: $('#textarea-format-localstorage').val() });
+    }
 })
 $('#textarea-format-localstorage').on('change', () => {
     chrome.storage.local.set({ textareaFormatLocalstorage: $('#textarea-format-localstorage').val() });

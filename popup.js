@@ -3,9 +3,9 @@ const pageZS = $('#pageZS')
 const target = $('#address')
 
 async function init() {
-    // chrome.storage.local.set({ _localStorage: null })
-    // chrome.storage.local.set({ _Cookies: null })
-    // chrome.storage.local.set({ iframeSrcArray: null })
+    chrome.storage.local.set({ _localStorage: null })
+    chrome.storage.local.set({ _Cookies: null })
+    chrome.storage.local.set({ iframeSrcArray: null })
     // 因为需要先准确地获取当前的页面才能注入js，所以这里需要使用同步函数，await
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab.url === 'edge://newtab/') {
@@ -74,35 +74,53 @@ async function init() {
     }
     $('#collapseLocalStorage .textarea-format-localstorage').before(`<ul class="collapse-header">${header}</ul>`)
 
-    const { textareaFormatLocalstorage } = await chrome.storage.local.get('textareaFormatLocalstorage')
-    const func = new Function(_localStorage, textareaFormatLocalstorage)
-    console.log(func(_localStorage));
-
     // 复制按钮
-    let timer = [];
+    let timer = {};
     $('#copy').on('click', async () => {
+        function setToast(id) {
+            for (const i in timer) {
+                clearTimeout(timer[i])
+                $(i).hide()
+            }
+            $(id).show()
+            timer[id] = setTimeout(() => {
+                $(id).hide()
+            }, 2000)
+        }
+        async function setInfo(tab) {
+            // 注入
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                function: setWindowInfo,
+                args: [$('#cookieCheck:checked').val() || false, $('#localStorageCheck:checked').val() || false]
+            });
+            setToast('#toast-success')
+        }
         let tabs = await chrome.tabs.query({});
+        let notab = true;
         for (const tab of tabs) {
             if (tab.url.includes(target.val())) {
-                // 注入
-                await chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    function: setWindowInfo,
-                    args: [$('#cookieCheck:checked').val() || false, $('#localStorageCheck:checked').val() || false]
-                });
-                if (timer[0]) clearTimeout(timer[0])
-                $('#toast-success').show()
-                timer[0] = setTimeout(() => {
-                    $('#toast-success').hide()
-                }, 3000)
-                return;
+                notab = false;
+                // 获取处理后的localStorage
+                if ($('#localStorageCheck:checked').val() === 'on') {
+                    const iframe = document.getElementById('sandbox');
+                    const { textareaFormatLocalstorage } = await chrome.storage.local.get('textareaFormatLocalstorage')
+                    iframe.contentWindow.postMessage([textareaFormatLocalstorage, _localStorage], '*');
+                    window.addEventListener('message', async function (event) {
+                        if (event.data instanceof Error) {
+                            setToast('#toast-funcError')
+                            return;
+                        }
+                        await chrome.storage.local.set({ _localStorage: event.data });
+                        setInfo(tab);
+                    });
+                } else {
+                    setInfo(tab);
+                }
             }
         }
-        if (timer[1]) clearTimeout(timer[1])
-        $('#toast-notarget').show()
-        timer[1] = setTimeout(() => {
-            $('#toast-notarget').hide()
-        }, 3000)
+        if (!notab) return;
+        setToast('#toast-notarget')
     });
 }
 init();
