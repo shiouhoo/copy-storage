@@ -1,3 +1,2 @@
-# copy-storage
-
-快速复制localStorage的数据到另一个页面
+# zsQuickToken
+将localstroage复制到目标窗口，并且可配置

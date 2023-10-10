@@ -5,6 +5,7 @@
             const func = new Function('obj', event.data[0])
             event.source.window.postMessage(func(event.data[1]), event.origin);
         } catch (e) {
+            console.error(e);
             event.source.window.postMessage(e, event.origin);
         }
 

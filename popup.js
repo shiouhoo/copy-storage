@@ -48,13 +48,17 @@ async function init() {
         let tabs = await chrome.tabs.query({});
         let notab = true;
         for (const tab of tabs) {
-            if (tab.url.includes(target.val())) {
+            const targetList = [target.val()];
+            if (target.val().includes('localhost')) {
+                targetList.push(target.val().replace('localhost', '127.0.0.1'))
+            };
+            if (targetList.find((item) => tab.url.includes(item))) {
                 notab = false;
                 // 获取处理后的localStorage
                 if ($('#localStorageCheck:checked').val() === 'on') {
                     const iframe = document.getElementById('sandbox');
                     const { textareaFormatLocalstorage } = await chrome.storage.local.get('textareaFormatLocalstorage')
-                    iframe.contentWindow.postMessage([textareaFormatLocalstorage, _localStorage], '*');
+                    iframe.contentWindow.postMessage([textareaFormatLocalstorage[tab.url.split('/')[2]], _localStorage], '*');
                     window.addEventListener('message', async function (event) {
                         if (event.data instanceof Error) {
                             setToast('#toast-funcError')
