@@ -5,13 +5,13 @@ async function init() {
     chrome.storage.local.set({ _localStorage: null })
     chrome.storage.local.set({ _Cookies: null })
     // 因为需要先准确地获取当前的页面才能注入js，所以这里需要使用同步函数，await
-    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab.url === 'edge://newtab/') {
+    let [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (currentTab.url === 'edge://newtab/') {
         $('.main').html('空标签页无法操作')
         return;
     }
     await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
+        target: { tabId: currentTab.id },
         function: getWindowInfo,
         args: [true]
     });
@@ -26,6 +26,7 @@ async function init() {
     // 复制按钮
     let timer = {};
     $('#copy').on('click', async () => {
+        // 展示toast
         function setToast(id) {
             for (const i in timer) {
                 clearTimeout(timer[i])
@@ -48,9 +49,11 @@ async function init() {
         let tabs = await chrome.tabs.query({});
         let notab = true;
         for (const tab of tabs) {
-            const targetList = [target.val()];
+            // 解析目标窗口
+            const targetList = ['http://' + target.val(), 'https://' + target.val()];
             if (target.val().includes('localhost')) {
-                targetList.push(target.val().replace('localhost', '127.0.0.1'))
+                targetList.push('http://' + target.val().replace('localhost', '127.0.0.1'));
+                targetList.push('https://' + target.val().replace('localhost', '127.0.0.1'));
             };
             if (targetList.find((item) => tab.url.includes(item))) {
                 notab = false;
@@ -58,7 +61,7 @@ async function init() {
                 if ($('#localStorageCheck:checked').val() === 'on') {
                     const iframe = document.getElementById('sandbox');
                     const { textareaFormatLocalstorage } = await chrome.storage.local.get('textareaFormatLocalstorage')
-                    iframe.contentWindow.postMessage([textareaFormatLocalstorage[tab.url.split('/')[2]], _localStorage], '*');
+                    iframe.contentWindow.postMessage([textareaFormatLocalstorage[currentTab.url.split('/')[2]], _localStorage], '*');
                     window.addEventListener('message', async function (event) {
                         if (event.data instanceof Error) {
                             setToast('#toast-funcError')

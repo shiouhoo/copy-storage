@@ -1,6 +1,6 @@
 {
-    "name": "招商",
-    "description": "招商本地token",
+    "name": "复制token",
+    "description": "将localstroage,cookie复制到目标窗口",
     "version": "1.0",
     "manifest_version": 3,
     "permissions": [

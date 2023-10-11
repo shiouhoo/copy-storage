@@ -2,6 +2,9 @@
 <script>
     window.addEventListener('message', async function (event) {
         try {
+            if (!event.data[0]) {
+                throw new Error('格式化方法有问题');
+            }
             const func = new Function('obj', event.data[0])
             event.source.window.postMessage(func(event.data[1]), event.origin);
         } catch (e) {
