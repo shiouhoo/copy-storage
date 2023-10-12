@@ -1,11 +1,44 @@
-// target
-$('#address').on('change', () => {
-    chrome.storage.local.set({ target: $('#address').val() });
-})
-chrome.storage.local.get('target', ({ target }) => {
-    if (target) {
-        $('#address').val(target)
+function getCurrentDomain() {
+    return new Promise((resolve, reject) => {
+        chrome.tabs.query({ active: true, currentWindow: true }).then((tab) => {
+            resolve(tab[0].url.split('/')[2])
+        })
+    });
+}
+
+async function changeLocal(name, key, id) {
+    const domain = await getCurrentDomain();
+    chrome.storage.local.get(name, async (data) => {
+        const target = data[key];
+        chrome.storage.local.set({
+            [name]: {
+                ...(target || {}),
+                [domain]: $(`#${id}`).val()
+            }
+        });
+    })
+}
+
+async function initLocal(data, name, id) {
+    const domain = await getCurrentDomain();
+    if (data && data[domain]) {
+        $(`#${id}`).val(data[domain])
+    } else {
+        chrome.storage.local.set({
+            [name]: {
+                ...(data || {}),
+                [url]: $(`#${id}`).val()
+            }
+        });
     }
+}
+
+// target
+$('#address').on('change', async () => {
+    changeLocal('target', 'target', 'address')
+})
+chrome.storage.local.get('target', async ({ target }) => {
+    initLocal(target, 'target', 'address')
 })
 // cookieCheck
 chrome.storage.local.get('cookieCheck', ({ cookieCheck }) => {
@@ -23,27 +56,8 @@ $('#localStorageCheck').on('change', () => {
 })
 // textarea-format-localstorage
 chrome.storage.local.get('textareaFormatLocalstorage', async ({ textareaFormatLocalstorage }) => {
-    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const url = tab.url.split('/')[2];
-    if (textareaFormatLocalstorage && textareaFormatLocalstorage[url]) {
-        $('#textarea-format-localstorage').val(textareaFormatLocalstorage[url])
-    } else {
-        chrome.storage.local.set({
-            textareaFormatLocalstorage: {
-                ...(textareaFormatLocalstorage || {}),
-                [url]: $('#textarea-format-localstorage').val()
-            }
-        });
-    }
+    initLocal(textareaFormatLocalstorage, 'textareaFormatLocalstorage', 'textarea-format-localstorage')
 })
 $('#textarea-format-localstorage').on('change', async () => {
-    chrome.storage.local.get('textareaFormatLocalstorage', async ({ textareaFormatLocalstorage }) => {
-        let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        chrome.storage.local.set({
-            textareaFormatLocalstorage: {
-                ...(textareaFormatLocalstorage || {}),
-                [tab.url.split('/')[2]]: $('#textarea-format-localstorage').val()
-            }
-        });
-    })
+    changeLocal('textareaFormatLocalstorage', 'textareaFormatLocalstorage', 'textarea-format-localstorage')
 })

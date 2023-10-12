@@ -13,10 +13,7 @@
         "*://*/*"
     ],
     "action": {
-        "default_popup": "popup.html",
-        "matches": [
-            "http://*/*"
-        ]
+        "default_popup": "popup.html"
     },
     "background": {
         "service_worker": "background.js"
