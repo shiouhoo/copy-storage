@@ -16,7 +16,7 @@
         "default_popup": "popup.html"
     },
     "icons": {
-        "32": "./images/popup2.png"
+        "16": "./images/popup.png"
     },
     "background": {
         "service_worker": "background.js"
