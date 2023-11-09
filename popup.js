@@ -6,14 +6,7 @@ async function init() {
     chrome.storage.local.set({ _Cookies: null })
     // 因为需要先准确地获取当前的页面才能注入js，所以这里需要使用同步函数，await
     let [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const urlPattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
-    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name and extension
-    '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
-    '(\\:\\d+)?'+ // port
-    '(\\/[-a-z\\d%_.~+]*)*'+ // path
-    '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
-    '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
-    if (!urlPattern.test(currentTab.url)) {
+    if (!currentTab.url.startsWith('http')) {
         $('.main').html('空标签页无法操作')
         return;
     }
@@ -68,7 +61,7 @@ async function init() {
                 if ($('#localStorageCheck:checked').val() === 'on') {
                     const iframe = document.getElementById('sandbox');
                     const { textareaFormatLocalstorage } = await chrome.storage.local.get('textareaFormatLocalstorage')
-                    iframe.contentWindow.postMessage([textareaFormatLocalstorage[currentTab.url.split('/')[2]], _localStorage], '*');
+                    iframe.contentWindow.postMessage([textareaFormatLocalstorage[currentTab.url.split('/')[2]] || 'return obj;', _localStorage], '*');
                     window.addEventListener('message', async function (event) {
                         if (event.data instanceof Error) {
                             setToast('#toast-funcError')

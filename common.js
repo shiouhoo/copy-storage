@@ -1,6 +1,9 @@
 function getCurrentDomain() {
     return new Promise((resolve, reject) => {
         chrome.tabs.query({ active: true, currentWindow: true }).then((tab) => {
+            if (!tab[0].url.startsWith('http')) {
+                reject('空标签页无法操作')
+            }
             resolve(tab[0].url.split('/')[2])
         })
     });
@@ -20,27 +23,21 @@ async function changeLocal(name, key, id) {
 }
 
 async function initLocal(data, name, id) {
-    const domain = await getCurrentDomain();
-    const urlPattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
-    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name and extension
-    '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
-    '(\\:\\d+)?'+ // port
-    '(\\/[-a-z\\d%_.~+]*)*'+ // path
-    '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
-    '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
-    if (!urlPattern.test(domain)) {
+    try {
+        const domain = await getCurrentDomain();
+        if (data && data[domain]) {
+            $(`#${id}`).val(data[domain])
+        } else {
+            chrome.storage.local.set({
+                [name]: {
+                    ...(data || {}),
+                    [domain]: $(`#${id}`).val()
+                }
+            });
+        }
+
+    } catch (e) {
         console.log("init：空标签页无法操作, 请打开一个网页");
-        return;
-    }
-    if (data && data[domain]) {
-        $(`#${id}`).val(data[domain])
-    } else {
-        chrome.storage.local.set({
-            [name]: {
-                ...(data || {}),
-                [domain]: $(`#${id}`).val()
-            }
-        });
     }
 }
 
