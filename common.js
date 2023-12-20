@@ -67,6 +67,13 @@ chrome.storage.local.get('localStorageCheck', ({ localStorageCheck }) => {
 $('#localStorageCheck').on('change', () => {
     chrome.storage.local.set({ localStorageCheck: $('#localStorageCheck:checked').val() || false });
 })
+// localStorageTogetherCheck
+chrome.storage.local.get('localStorageTogetherCheck', ({ localStorageTogetherCheck }) => {
+    $('#localStorageTogetherCheck').prop('checked', localStorageTogetherCheck);
+})
+$('#localStorageTogetherCheck').on('change', () => {
+    chrome.storage.local.set({ localStorageTogetherCheck: $('#localStorageTogetherCheck:checked').val() || false });
+})
 // textarea-format-localstorage
 chrome.storage.local.get('textareaFormatLocalStorage', async ({ textareaFormatLocalStorage }) => {
     initLocal(textareaFormatLocalStorage, 'textareaFormatLocalStorage', 'textarea-format-localstorage')
@@ -80,6 +87,13 @@ chrome.storage.local.get('sessionStorageCheck', ({ sessionStorageCheck }) => {
 })
 $('#sessionStorageCheck').on('change', () => {
     chrome.storage.local.set({ sessionStorageCheck: $('#sessionStorageCheck:checked').val() || false });
+})
+// sessionStorageTogetherCheck
+chrome.storage.local.get('sessionStorageTogetherCheck', ({ sessionStorageTogetherCheck }) => {
+    $('#sessionStorageTogetherCheck').prop('checked', sessionStorageTogetherCheck);
+})
+$('#sessionStorageTogetherCheck').on('change', () => {
+    chrome.storage.local.set({ sessionStorageTogetherCheck: $('#sessionStorageTogetherCheck:checked').val() || false });
 })
 // textarea-format-sessionstorage
 chrome.storage.local.get('textareaFormatSessionStorage', async ({ textareaFormatSessionStorage }) => {

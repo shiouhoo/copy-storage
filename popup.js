@@ -12,7 +12,7 @@ async function getStorage(storageName) {
             iframe.contentWindow.postMessage([textareaFormat?.[currentTab.url.split('/')[2]] || 'return obj;', storage, storageName], '*');
             async function listener(event) {
                 if (event.data[1] !== storageName) return;
-                if (event.data[0] instanceof Error) {
+                if (!(event.data[0] instanceof Error)) {
                     await chrome.storage.local.set({ ['_' + storageName]: event.data[0] });
                     window.removeEventListener('message', listener);
                 }
@@ -107,6 +107,21 @@ async function init() {
 init();
 
 async function setWindowInfo(setCookie, setLocalStorage, setSessionStorage) {
+    const { sessionStorageTogetherCheck } = await chrome.storage.local.get('sessionStorageTogetherCheck');
+    const { localStorageTogetherCheck } = await chrome.storage.local.get('localStorageTogetherCheck');
+    if (localStorageTogetherCheck === 'on') {
+        const { _localStorage } = await chrome.storage.local.get('_localStorage')
+        console.log(_localStorage.token);
+        for (const key in _localStorage) {
+            sessionStorage.setItem(key, _localStorage[key])
+        }
+    }
+    if (sessionStorageTogetherCheck === 'on') {
+        const { _sessionStorage } = await chrome.storage.local.get('_sessionStorage')
+        for (const key in _sessionStorage) {
+            localStorage.setItem(key, _sessionStorage[key])
+        }
+    }
     if (setLocalStorage === 'on') {
         const { _localStorage } = await chrome.storage.local.get('_localStorage')
         for (const key in _localStorage) {
