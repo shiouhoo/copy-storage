@@ -68,9 +68,23 @@ $('#localStorageCheck').on('change', () => {
     chrome.storage.local.set({ localStorageCheck: $('#localStorageCheck:checked').val() || false });
 })
 // textarea-format-localstorage
-chrome.storage.local.get('textareaFormatLocalstorage', async ({ textareaFormatLocalstorage }) => {
-    initLocal(textareaFormatLocalstorage, 'textareaFormatLocalstorage', 'textarea-format-localstorage')
+chrome.storage.local.get('textareaFormatLocalStorage', async ({ textareaFormatLocalStorage }) => {
+    initLocal(textareaFormatLocalStorage, 'textareaFormatLocalStorage', 'textarea-format-localstorage')
 })
 $('#textarea-format-localstorage').on('change', async () => {
-    changeLocal('textareaFormatLocalstorage', 'textareaFormatLocalstorage', 'textarea-format-localstorage')
+    changeLocal('textareaFormatLocalStorage', 'textareaFormatLocalStorage', 'textarea-format-localstorage')
+})
+// sessionStorageCheck
+chrome.storage.local.get('sessionStorageCheck', ({ sessionStorageCheck }) => {
+    $('#sessionStorageCheck').prop('checked', sessionStorageCheck);
+})
+$('#sessionStorageCheck').on('change', () => {
+    chrome.storage.local.set({ sessionStorageCheck: $('#sessionStorageCheck:checked').val() || false });
+})
+// textarea-format-sessionstorage
+chrome.storage.local.get('textareaFormatSessionStorage', async ({ textareaFormatSessionStorage }) => {
+    initLocal(textareaFormatSessionStorage, 'textareaFormatSessionStorage', 'textarea-format-sessionstorage')
+})
+$('#textarea-format-sessionstorage').on('change', async () => {
+    changeLocal('textareaFormatSessionStorage', 'textareaFormatSessionStorage', 'textarea-format-sessionstorage')
 })

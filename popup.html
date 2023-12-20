@@ -25,10 +25,13 @@
             margin: 20px auto 0;
         }
 
-        .toast {
-            margin-bottom: 20px;
+        .toast-box {
             position: fixed;
             z-index: 99999999;
+        }
+
+        .toast {
+            margin-bottom: 2px;
         }
 
         .absolute-left-center {
@@ -37,6 +40,14 @@
             left: 10px;
             top: 50%;
             transform: translateY(-50%);
+        }
+
+        .check-one {
+            top: 30%;
+        }
+
+        .check-two {
+            top: 70%;
         }
 
         .accordion-body {
@@ -62,30 +73,46 @@
             white-space: nowrap;
             text-overflow: ellipsis;
         }
+
+        .input-tip {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 
 <body>
     <iframe src="./sandbox.html" id="sandbox" style="display: none"></iframe>
     <div class="main">
-        <div id="toast-success" class="toast align-items-center text-bg-primary border-0"
-            role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body"> 复制成功 </div>
+        <div class="toast-box">
+            <div id="toast-success" class="toast align-items-center text-bg-primary border-0"
+                role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body"> 复制成功 </div>
+                </div>
+            </div>
+            <div id="toast-notarget" class="toast align-items-center text-bg-danger border-0"
+                role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body"> 找不到目标窗口 </div>
+                </div>
+            </div>
+            <div id="toast-funcError-local" class="toast align-items-center text-bg-danger border-0"
+                role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body"> localStorage格式化函数不正确 </div>
+                </div>
+            </div>
+            <div id="toast-funcError-session"
+                class="toast align-items-center text-bg-danger border-0" role="alert"
+                aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body"> sessionStorage格式化函数不正确 </div>
+                </div>
             </div>
         </div>
-        <div id="toast-notarget" class="toast align-items-center text-bg-primary border-0"
-            role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body"> 找不到目标窗口 </div>
-            </div>
-        </div>
-        <div id="toast-funcError" class="toast align-items-center text-bg-primary border-0"
-            role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body"> 格式化函数不正确 </div>
-            </div>
-        </div>
+        <div class="input-tip">* 只需输入ip+[端口]或者域名即可(会复制到所有匹配上的页面):</div>
         <div class="input-group mb-3">
             <div class="input-group-prepend">
                 <span class="input-group-text" id="basic-addon1">目标地址</span>
@@ -100,11 +127,18 @@
                     <div class="accordion-button collapsed" data-bs-toggle="collapse"
                         data-bs-target="#collapseLocalStorage" aria-controls="collapseLocalStorage">
                     </div>
-                    <div class="form-check form-switch absolute-left-center">
+                    <!-- 头部开关 -->
+                    <div class="form-check form-switch absolute-left-center check-one">
                         <input class="form-check-input" type="checkbox" role="switch"
                             id="localStorageCheck" checked>
                         <label class="form-check-label" for="localStorageCheck"> localStorage
                         </label>
+                    </div>
+                    <div class="form-check form-switch absolute-left-center check-two">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                            id="localStorageTogetherCheck" checked>
+                        <label class="form-check-label" for="localStorageTogetherCheck">
+                            同步到sessionStorage </label>
                     </div>
                 </div>
                 <div id="collapseLocalStorage" class="accordion-collapse collapse"
@@ -115,7 +149,41 @@
                                 rows="5">return obj;</textarea>
                         </div>
                         <div class="tip">
-                            上面是你的localStorage，你可以在输入框中对其进行格式化(直接编写函数体，一定要有返回值，obj为localstorage键值对)
+                            上面是你的localStorage，你可以在输入框中对其进行格式化(直接编写函数体，一定要有返回值，obj为localStorage键值对)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- sessionStorageCheck -->
+            <div class="accordion-item">
+                <div class="accordion-header" id="headingSession" style="position: relative;">
+                    <div class="accordion-button collapsed" data-bs-toggle="collapse"
+                        data-bs-target="#collapseSessionStorage"
+                        aria-controls="collapseSessionStorage">
+                    </div>
+                    <!-- 头部开关 -->
+                    <div class="form-check form-switch absolute-left-center check-one">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                            id="sessionStorageCheck" checked>
+                        <label class="form-check-label" for="sessionStorageCheck"> sessionStorage
+                        </label>
+                    </div>
+                    <div class="form-check form-switch absolute-left-center check-two">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                            id="sessionStorageTogetherCheck" checked>
+                        <label class="form-check-label" for="sessionStorageTogetherCheck">
+                            同步到localStorage </label>
+                    </div>
+                </div>
+                <div id="collapseSessionStorage" class="accordion-collapse collapse"
+                    aria-labelledby="headingSession" data-bs-parent="#accordionExample">
+                    <div class="accordion-body">
+                        <div class="textarea-format-sessionstorage">
+                            <textarea class="form-control" id="textarea-format-sessionstorage"
+                                rows="5">return obj;</textarea>
+                        </div>
+                        <div class="tip">
+                            上面是你的sessionStorage，你可以在输入框中对其进行格式化(直接编写函数体，一定要有返回值，obj为sessionStorage键值对)
                         </div>
                     </div>
                 </div>

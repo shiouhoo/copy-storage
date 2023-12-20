@@ -1,8 +1,33 @@
 const btn = $('#btn')
 const target = $('#address')
 
+async function getStorage(storageName) {
+    const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return new Promise(async (resolve) => {
+        if ($(`#${storageName}Check:checked`).val() === 'on') {
+            const iframe = document.getElementById('sandbox');
+            const textareaname = `textareaFormat${storageName.charAt(0).toUpperCase() + storageName.slice(1)}`
+            const { [textareaname]: textareaFormat } = await chrome.storage.local.get(textareaname)
+            const { ['_' + storageName]: storage } = await chrome.storage.local.get(`_${storageName}`)
+            iframe.contentWindow.postMessage([textareaFormat?.[currentTab.url.split('/')[2]] || 'return obj;', storage, storageName], '*');
+            async function listener(event) {
+                if (event.data[1] !== storageName) return;
+                if (event.data[0] instanceof Error) {
+                    await chrome.storage.local.set({ ['_' + storageName]: event.data[0] });
+                    window.removeEventListener('message', listener);
+                }
+                resolve(event);
+            }
+            window.addEventListener('message', listener);
+        } else {
+            resolve(null);
+        }
+    })
+}
+
 async function init() {
     chrome.storage.local.set({ _localStorage: null })
+    chrome.storage.local.set({ _sessionStorage: null })
     chrome.storage.local.set({ _Cookies: null })
     // 因为需要先准确地获取当前的页面才能注入js，所以这里需要使用同步函数，await
     let [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -13,7 +38,7 @@ async function init() {
     await chrome.scripting.executeScript({
         target: { tabId: currentTab.id },
         function: getWindowInfo,
-        args: [true]
+        args: []
     });
     // localStorageCheck展开项
     const { _localStorage } = await chrome.storage.local.get('_localStorage')
@@ -23,17 +48,20 @@ async function init() {
     }
     $('#collapseLocalStorage .textarea-format-localstorage').before(`<ul class="collapse-header">${header}</ul>`)
 
+    // sessionStorageCheck展开项
+    const { _sessionStorage } = await chrome.storage.local.get('_sessionStorage')
+    header = ''
+    for (let i in _sessionStorage) {
+        header += `<li> ${i} </li>`
+    }
+    $('#collapseSessionStorage .textarea-format-sessionstorage').before(`<ul class="collapse-header">${header}</ul>`)
+
     // 复制按钮
-    let timer = {};
     $('#copy').on('click', async () => {
         // 展示toast
         function setToast(id) {
-            for (const i in timer) {
-                clearTimeout(timer[i])
-                $(i).hide()
-            }
             $(id).show()
-            timer[id] = setTimeout(() => {
+            setTimeout(() => {
                 $(id).hide()
             }, 2000)
         }
@@ -42,7 +70,7 @@ async function init() {
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
                 function: setWindowInfo,
-                args: [$('#cookieCheck:checked').val() || false, $('#localStorageCheck:checked').val() || false]
+                args: [$('#cookieCheck:checked').val() || false, $('#localStorageCheck:checked').val() || false, $('#sessionStorageCheck:checked').val() || false]
             });
             setToast('#toast-success')
         }
@@ -58,18 +86,15 @@ async function init() {
             if (targetList.find((item) => tab.url.includes(item))) {
                 notab = false;
                 // 获取处理后的localStorage
-                if ($('#localStorageCheck:checked').val() === 'on') {
-                    const iframe = document.getElementById('sandbox');
-                    const { textareaFormatLocalstorage } = await chrome.storage.local.get('textareaFormatLocalstorage')
-                    iframe.contentWindow.postMessage([textareaFormatLocalstorage[currentTab.url.split('/')[2]] || 'return obj;', _localStorage], '*');
-                    window.addEventListener('message', async function (event) {
-                        if (event.data instanceof Error) {
-                            setToast('#toast-funcError')
-                            return;
-                        }
-                        await chrome.storage.local.set({ _localStorage: event.data });
-                        setInfo(tab);
-                    });
+                if ($('#localStorageCheck:checked').val() === 'on' || $('#sessionStorageCheck:checked').val() === 'on') {
+                    const res = await Promise.all([getStorage('localStorage'), getStorage('sessionStorage')]);
+                    if (res[0] && res[0].data[0] instanceof Error) {
+                        setToast('#toast-funcError-local')
+                    }
+                    if (res[1] && res[1].data[0] instanceof Error) {
+                        setToast('#toast-funcError-session')
+                    }
+                    setInfo(tab);
                 } else {
                     setInfo(tab);
                 }
@@ -81,11 +106,17 @@ async function init() {
 }
 init();
 
-async function setWindowInfo(setCookie, setLocalStorage) {
+async function setWindowInfo(setCookie, setLocalStorage, setSessionStorage) {
     if (setLocalStorage === 'on') {
         const { _localStorage } = await chrome.storage.local.get('_localStorage')
         for (const key in _localStorage) {
             localStorage.setItem(key, _localStorage[key])
+        }
+    }
+    if (setSessionStorage === 'on') {
+        const { _sessionStorage } = await chrome.storage.local.get('_sessionStorage')
+        for (const key in _sessionStorage) {
+            sessionStorage.setItem(key, _sessionStorage[key])
         }
     }
     if (setCookie === 'on') {
@@ -95,7 +126,7 @@ async function setWindowInfo(setCookie, setLocalStorage) {
 }
 
 // 注入的方法
-async function getWindowInfo(isZs = false) {
+async function getWindowInfo() {
 
     function getLocalStorage() {
         const obj = {};
@@ -107,10 +138,21 @@ async function getWindowInfo(isZs = false) {
         chrome.storage.local.set({ _localStorage: obj })
     }
 
+    function getSessionStorage() {
+        const obj = {};
+        for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            if (!key) continue;
+            obj[key] = sessionStorage.getItem(key);
+        }
+        chrome.storage.local.set({ _sessionStorage: obj })
+    }
+
     function getCookies() {
         chrome.storage.local.set({ _Cookies: document.cookie })
     }
 
-    getLocalStorage()
-    getCookies()
+    getLocalStorage();
+    getCookies();
+    getSessionStorage();
 }

@@ -5,11 +5,12 @@
             if (!event.data[0]) {
                 throw new Error('格式化方法有问题');
             }
-            const func = new Function('obj', event.data[0])
-            event.source.window.postMessage(func(event.data[1]), event.origin);
+            const func = new Function('obj', event.data[0]);
+            console.log(event);
+            event.source.window.postMessage([func(event.data[1]), event.data[2]], event.origin);
         } catch (e) {
             console.error(e);
-            event.source.window.postMessage(e, event.origin);
+            event.source.window.postMessage([e, event.data[2]], event.origin);
         }
 
     });    

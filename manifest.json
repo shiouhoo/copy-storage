@@ -1,6 +1,6 @@
 {
     "name": "复制token",
-    "description": "将localstroage,cookie复制到目标窗口",
+    "description": "将localStroage,sessionStorage,cookie复制到目标窗口",
     "version": "1.0.1",
     "manifest_version": 3,
     "permissions": [
