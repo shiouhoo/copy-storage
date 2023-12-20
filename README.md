@@ -12,5 +12,5 @@ return {
 
 ```
 obj为当前页面的localStorage键值构成的对象，返回的结果也将以键值对的形式复制到目标窗口的localStorage中
-
+- 同步开关，可以将localStorage复制到目标窗口的sessionStorage，反之亦可
 - cookie开关，是否复制cookie
