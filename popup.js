@@ -35,11 +35,6 @@ async function init() {
         $('.main').html('空标签页无法操作')
         return;
     }
-    await chrome.scripting.executeScript({
-        target: { tabId: currentTab.id },
-        function: getWindowInfo,
-        args: []
-    });
     // localStorageCheck展开项
     const { _localStorage } = await chrome.storage.local.get('_localStorage')
     let header = ''
@@ -58,6 +53,11 @@ async function init() {
 
     // 复制按钮
     $('#copy').on('click', async () => {
+        await chrome.scripting.executeScript({
+            target: { tabId: currentTab.id },
+            function: getWindowInfo,
+            args: []
+        });
         // 展示toast
         function setToast(id) {
             $(id).show()
