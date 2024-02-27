@@ -20,13 +20,9 @@
             word-wrap: break-word;
         }
 
-        #copy {
-            display: block;
-            margin: 20px auto 0;
-        }
-
         .toast-box {
             position: fixed;
+            top: 7px;
             z-index: 99999999;
         }
 
@@ -113,7 +109,7 @@
             </div>
         </div>
         <div class="input-tip">* 只需输入ip+[端口]或者域名即可(会复制到所有匹配上的页面):</div>
-        <div class="input-group mb-3">
+        <div class="input-group my-3">
             <div class="input-group-prepend">
                 <span class="input-group-text" id="basic-addon1">目标地址</span>
             </div>
@@ -208,7 +204,14 @@
                 </div>
             </div>
         </div>
-        <button id="copy" type="button" class="btn btn-primary">一键复制</button>
+        <div style="display: flex;gap:20px;justify-content: center;margin: 20px 0 0 0;">
+            <button id="copy" type="button" class="btn btn-primary"
+                style="width:120px">一键复制</button>
+            <button id="copy-script" type="button" class="btn btn-primary"
+                style="width:120px">复制代码</button>
+            <!-- <button id="parse-script" type="button" class="btn btn-primary"
+                style="width:120px">识别代码</button> -->
+        </div>
     </div>
 </body>
 <script src="popup.js" type="text/javascript"></script>

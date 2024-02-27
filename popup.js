@@ -24,6 +24,70 @@ async function getStorage(storageName) {
         }
     })
 }
+// 展示toast
+function setToast(id) {
+    $(id).show()
+    setTimeout(() => {
+        $(id).hide()
+    }, 2000)
+}
+async function setInfo(tab) {
+    // 注入
+    await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        function: setWindowInfo,
+        args: [$('#cookieCheck:checked').val() || false, $('#localStorageCheck:checked').val() || false, $('#sessionStorageCheck:checked').val() || false]
+    });
+    setToast('#toast-success')
+}
+// 获取处理后的localStorage
+async function getParseLocalStorage(tab) {
+    if ($('#localStorageCheck:checked').val() === 'on' || $('#sessionStorageCheck:checked').val() === 'on') {
+        const res = await Promise.all([getStorage('localStorage'), getStorage('sessionStorage')]);
+        if (res[0] && res[0].data[0] instanceof Error) {
+            setToast('#toast-funcError-local')
+        }
+        if (res[1] && res[1].data[0] instanceof Error) {
+            setToast('#toast-funcError-session')
+        }
+        tab && setInfo(tab);
+    } else {
+        tab && setInfo(tab);
+    }
+}
+
+async function getCopyScriptCode() {
+    let code = '/** 请在目标页面的控制台中执行--复制token **/;';
+    if($('#localStorageCheck:checked').val() === 'on'){
+        const { _localStorage } = await chrome.storage.local.get('_localStorage')
+        for (const key in _localStorage) {
+            code += `localStorage.setItem('${key}', '${_localStorage[key]}');`
+        }
+    }
+    if($('#sessionStorageCheck:checked').val() === 'on'){
+        const { _sessionStorage } = await chrome.storage.local.get('_sessionStorage')
+        for (const key in _sessionStorage) {
+            code += `sessionStorage.setItem('${key}', '${_sessionStorage[key]}');`
+        }
+    }
+    if($('#cookieCheck:checked').val() === 'on'){
+        const { _Cookies } = await chrome.storage.local.get('_Cookies')
+        code += `document.cookie = '${_Cookies}';`
+    }
+    if($('#localStorageTogetherCheck:checked').val() === 'on'){
+        const { _localStorage } = await chrome.storage.local.get('_localStorage')
+        for (const key in _localStorage) {
+            code += `sessionStorage.setItem('${key}', '${_localStorage[key]}');`
+        }
+    }
+    if($('#sessionStorageTogetherCheck:checked').val() === 'on'){
+        const { _sessionStorage } = await chrome.storage.local.get('_sessionStorage')
+        for (const key in _sessionStorage) {
+            code += `localStorage.setItem('${key}', '${_sessionStorage[key]}');`
+        }
+    }
+    return code;
+}
 
 async function init() {
     chrome.storage.local.set({ _localStorage: null })
@@ -58,22 +122,6 @@ async function init() {
             function: getWindowInfo,
             args: []
         });
-        // 展示toast
-        function setToast(id) {
-            $(id).show()
-            setTimeout(() => {
-                $(id).hide()
-            }, 2000)
-        }
-        async function setInfo(tab) {
-            // 注入
-            await chrome.scripting.executeScript({
-                target: { tabId: tab.id },
-                function: setWindowInfo,
-                args: [$('#cookieCheck:checked').val() || false, $('#localStorageCheck:checked').val() || false, $('#sessionStorageCheck:checked').val() || false]
-            });
-            setToast('#toast-success')
-        }
         let tabs = await chrome.tabs.query({});
         let notab = true;
         for (const tab of tabs) {
@@ -85,24 +133,41 @@ async function init() {
             };
             if (targetList.find((item) => tab.url.includes(item))) {
                 notab = false;
-                // 获取处理后的localStorage
-                if ($('#localStorageCheck:checked').val() === 'on' || $('#sessionStorageCheck:checked').val() === 'on') {
-                    const res = await Promise.all([getStorage('localStorage'), getStorage('sessionStorage')]);
-                    if (res[0] && res[0].data[0] instanceof Error) {
-                        setToast('#toast-funcError-local')
-                    }
-                    if (res[1] && res[1].data[0] instanceof Error) {
-                        setToast('#toast-funcError-session')
-                    }
-                    setInfo(tab);
-                } else {
-                    setInfo(tab);
-                }
+                await getParseLocalStorage(tab);
             }
         }
         if (!notab) return;
         setToast('#toast-notarget')
     });
+    // 复制代码按钮
+    $('#copy-script').on('click', async () => {
+        await chrome.scripting.executeScript({
+            target: { tabId: currentTab.id },
+            function: getWindowInfo,
+            args: []
+        });
+        await getParseLocalStorage();
+        getCopyScriptCode().then((code) => {
+            navigator.clipboard.writeText(code).then(() => {
+                setToast('#toast-success')
+            })
+        })
+    });
+    // 识别代码按钮
+    // $('#parse-script').on('click', async () => {
+
+    //     navigator.clipboard.readText().then(async (code) => {
+    //         if(code.includes('复制token')){
+    //             console.log(code);
+    //             // 在目标页面执行
+    //             await chrome.scripting.executeScript({
+    //                 target: { tabId: currentTab.id },
+    //                 function: ()=>{
+    //                 }
+    //             });
+    //         }
+    //     });
+    // });
 }
 init();
 
@@ -111,7 +176,6 @@ async function setWindowInfo(setCookie, setLocalStorage, setSessionStorage) {
     const { localStorageTogetherCheck } = await chrome.storage.local.get('localStorageTogetherCheck');
     if (localStorageTogetherCheck === 'on') {
         const { _localStorage } = await chrome.storage.local.get('_localStorage')
-        console.log(_localStorage.token);
         for (const key in _localStorage) {
             sessionStorage.setItem(key, _localStorage[key])
         }
