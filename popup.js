@@ -58,29 +58,29 @@ async function getParseLocalStorage(tab) {
 
 async function getCopyScriptCode() {
     let code = '/** 请在目标页面的控制台中执行--复制token **/;';
-    if($('#localStorageCheck:checked').val() === 'on'){
+    if ($('#localStorageCheck:checked').val() === 'on') {
         const { _localStorage } = await chrome.storage.local.get('_localStorage')
         for (const key in _localStorage) {
             code += `localStorage.setItem('${key}', '${_localStorage[key]}');`
         }
     }
-    if($('#sessionStorageCheck:checked').val() === 'on'){
+    if ($('#sessionStorageCheck:checked').val() === 'on') {
         const { _sessionStorage } = await chrome.storage.local.get('_sessionStorage')
         for (const key in _sessionStorage) {
             code += `sessionStorage.setItem('${key}', '${_sessionStorage[key]}');`
         }
     }
-    if($('#cookieCheck:checked').val() === 'on'){
+    if ($('#cookieCheck:checked').val() === 'on') {
         const { _Cookies } = await chrome.storage.local.get('_Cookies')
         code += `document.cookie = '${_Cookies}';`
     }
-    if($('#localStorageTogetherCheck:checked').val() === 'on'){
+    if ($('#localStorageTogetherCheck:checked').val() === 'on') {
         const { _localStorage } = await chrome.storage.local.get('_localStorage')
         for (const key in _localStorage) {
             code += `sessionStorage.setItem('${key}', '${_localStorage[key]}');`
         }
     }
-    if($('#sessionStorageTogetherCheck:checked').val() === 'on'){
+    if ($('#sessionStorageTogetherCheck:checked').val() === 'on') {
         const { _sessionStorage } = await chrome.storage.local.get('_sessionStorage')
         for (const key in _sessionStorage) {
             code += `localStorage.setItem('${key}', '${_sessionStorage[key]}');`
@@ -90,15 +90,17 @@ async function getCopyScriptCode() {
 }
 
 async function init() {
-    chrome.storage.local.set({ _localStorage: null })
-    chrome.storage.local.set({ _sessionStorage: null })
-    chrome.storage.local.set({ _Cookies: null })
     // 因为需要先准确地获取当前的页面才能注入js，所以这里需要使用同步函数，await
     let [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!currentTab.url.startsWith('http')) {
         $('.main').html('空标签页无法操作')
         return;
     }
+    await chrome.scripting.executeScript({
+        target: { tabId: currentTab.id },
+        function: getWindowInfo,
+        args: []
+    });
     // localStorageCheck展开项
     const { _localStorage } = await chrome.storage.local.get('_localStorage')
     let header = ''
@@ -117,14 +119,14 @@ async function init() {
 
     // 复制按钮
     $('#copy').on('click', async () => {
-        await chrome.scripting.executeScript({
-            target: { tabId: currentTab.id },
-            function: getWindowInfo,
-            args: []
-        });
         let tabs = await chrome.tabs.query({});
         let notab = true;
         for (const tab of tabs) {
+            await chrome.scripting.executeScript({
+                target: { tabId: currentTab.id },
+                function: getWindowInfo,
+                args: []
+            });
             // 解析目标窗口
             const targetList = ['http://' + target.val(), 'https://' + target.val()];
             if (target.val().includes('localhost')) {
