@@ -55,21 +55,21 @@ chrome.storage.local.get('target', async ({ target }) => {
 })
 // cookieCheck
 chrome.storage.local.get('cookieCheck', ({ cookieCheck }) => {
-    $('#cookieCheck').prop('checked', cookieCheck);
+    $('#cookieCheck').prop('checked', cookieCheck || false);
 })
 $('#cookieCheck').on('change', () => {
     chrome.storage.local.set({ cookieCheck: $('#cookieCheck:checked').val() || false });
 })
 // localStorageCheck
 chrome.storage.local.get('localStorageCheck', ({ localStorageCheck }) => {
-    $('#localStorageCheck').prop('checked', localStorageCheck);
+    $('#localStorageCheck').prop('checked', localStorageCheck || false);
 })
 $('#localStorageCheck').on('change', () => {
     chrome.storage.local.set({ localStorageCheck: $('#localStorageCheck:checked').val() || false });
 })
 // localStorageTogetherCheck
 chrome.storage.local.get('localStorageTogetherCheck', ({ localStorageTogetherCheck }) => {
-    $('#localStorageTogetherCheck').prop('checked', localStorageTogetherCheck);
+    $('#localStorageTogetherCheck').prop('checked', localStorageTogetherCheck || false);
 })
 $('#localStorageTogetherCheck').on('change', () => {
     chrome.storage.local.set({ localStorageTogetherCheck: $('#localStorageTogetherCheck:checked').val() || false });
@@ -83,14 +83,14 @@ $('#textarea-format-localstorage').on('change', async () => {
 })
 // sessionStorageCheck
 chrome.storage.local.get('sessionStorageCheck', ({ sessionStorageCheck }) => {
-    $('#sessionStorageCheck').prop('checked', sessionStorageCheck);
+    $('#sessionStorageCheck').prop('checked', sessionStorageCheck || false);
 })
 $('#sessionStorageCheck').on('change', () => {
     chrome.storage.local.set({ sessionStorageCheck: $('#sessionStorageCheck:checked').val() || false });
 })
 // sessionStorageTogetherCheck
 chrome.storage.local.get('sessionStorageTogetherCheck', ({ sessionStorageTogetherCheck }) => {
-    $('#sessionStorageTogetherCheck').prop('checked', sessionStorageTogetherCheck);
+    $('#sessionStorageTogetherCheck').prop('checked', sessionStorageTogetherCheck || false);
 })
 $('#sessionStorageTogetherCheck').on('change', () => {
     chrome.storage.local.set({ sessionStorageTogetherCheck: $('#sessionStorageTogetherCheck:checked').val() || false });

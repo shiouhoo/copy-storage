@@ -50,9 +50,9 @@ async function getParseLocalStorage(tab) {
         if (res[1] && res[1].data[0] instanceof Error) {
             setToast('#toast-funcError-session')
         }
-        tab && setInfo(tab);
+        tab && await setInfo(tab);
     } else {
-        tab && setInfo(tab);
+        tab && await setInfo(tab);
     }
 }
 
@@ -122,11 +122,6 @@ async function init() {
         let tabs = await chrome.tabs.query({});
         let notab = true;
         for (const tab of tabs) {
-            await chrome.scripting.executeScript({
-                target: { tabId: currentTab.id },
-                function: getWindowInfo,
-                args: []
-            });
             // 解析目标窗口
             const targetList = ['http://' + target.val(), 'https://' + target.val()];
             if (target.val().includes('localhost')) {
@@ -134,6 +129,11 @@ async function init() {
                 targetList.push('https://' + target.val().replace('localhost', '127.0.0.1'));
             };
             if (targetList.find((item) => tab.url.includes(item))) {
+                await chrome.scripting.executeScript({
+                    target: { tabId: currentTab.id },
+                    function: getWindowInfo,
+                    args: []
+                });
                 notab = false;
                 await getParseLocalStorage(tab);
             }
@@ -177,7 +177,7 @@ async function setWindowInfo(setCookie, setLocalStorage, setSessionStorage) {
     const { sessionStorageTogetherCheck } = await chrome.storage.local.get('sessionStorageTogetherCheck');
     const { localStorageTogetherCheck } = await chrome.storage.local.get('localStorageTogetherCheck');
     if (localStorageTogetherCheck === 'on') {
-        const { _localStorage } = await chrome.storage.local.get('_localStorage')
+        const { _localStorage } = await chrome.storage.local.get('_localStorage');
         for (const key in _localStorage) {
             sessionStorage.setItem(key, _localStorage[key])
         }
@@ -209,31 +209,31 @@ async function setWindowInfo(setCookie, setLocalStorage, setSessionStorage) {
 // 注入的方法
 async function getWindowInfo() {
 
-    function getLocalStorage() {
+    async function getLocalStorage() {
         const obj = {};
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             if (!key) continue;
             obj[key] = localStorage.getItem(key);
         }
-        chrome.storage.local.set({ _localStorage: obj })
+        await chrome.storage.local.set({ _localStorage: obj })
     }
 
-    function getSessionStorage() {
+    async function getSessionStorage() {
         const obj = {};
         for (let i = 0; i < sessionStorage.length; i++) {
             const key = sessionStorage.key(i);
             if (!key) continue;
             obj[key] = sessionStorage.getItem(key);
         }
-        chrome.storage.local.set({ _sessionStorage: obj })
+        await chrome.storage.local.set({ _sessionStorage: obj })
     }
 
-    function getCookies() {
-        chrome.storage.local.set({ _Cookies: document.cookie })
+    async function getCookies() {
+        await chrome.storage.local.set({ _Cookies: document.cookie })
     }
 
-    getLocalStorage();
-    getCookies();
-    getSessionStorage();
+    await getLocalStorage();
+    await getCookies();
+    await getSessionStorage();
 }
