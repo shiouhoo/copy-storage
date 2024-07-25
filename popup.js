@@ -25,7 +25,12 @@ async function getStorage(storageName) {
     })
 }
 // 展示toast
+let toastNumber = 0;
 function setToast(id) {
+    if($(id).is(':visible')){
+        $(`${id} .toast-body`).text(`复制到${toastNumber}个窗口成功`);
+        return;
+    }
     $(id).show()
     setTimeout(() => {
         $(id).hide()
@@ -33,15 +38,20 @@ function setToast(id) {
 }
 async function setInfo(tab) {
     // 注入
-    await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        function: setWindowInfo,
-        args: [$('#cookieCheck:checked').val() || false, $('#localStorageCheck:checked').val() || false, $('#sessionStorageCheck:checked').val() || false]
-    });
-    setToast('#toast-success')
+    try{
+        await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            function: setWindowInfo,
+            args: [$('#cookieCheck:checked').val() || false, $('#localStorageCheck:checked').val() || false, $('#sessionStorageCheck:checked').val() || false]
+        });
+        return true;
+    }catch(e){
+        console.log(e);
+    }
+    return false;
 }
 // 获取处理后的localStorage
-async function getParseLocalStorage(tab) {
+async function getParseLocalStorage() {
     if ($('#localStorageCheck:checked').val() === 'on' || $('#sessionStorageCheck:checked').val() === 'on') {
         const res = await Promise.all([getStorage('localStorage'), getStorage('sessionStorage')]);
         if (res[0] && res[0].data[0] instanceof Error) {
@@ -50,9 +60,6 @@ async function getParseLocalStorage(tab) {
         if (res[1] && res[1].data[0] instanceof Error) {
             setToast('#toast-funcError-session')
         }
-        tab && await setInfo(tab);
-    } else {
-        tab && await setInfo(tab);
     }
 }
 
@@ -105,9 +112,18 @@ async function init() {
     const { _localStorage } = await chrome.storage.local.get('_localStorage')
     let header = ''
     for (let i in _localStorage) {
-        header += `<li> ${i} </li>`
+        header += `<li style="cursor: pointer"> ${i}</li>`
     }
     $('#collapseLocalStorage .textarea-format-localstorage').before(`<ul class="collapse-header">${header}</ul>`)
+
+    $('#collapseLocalStorage ul').on('click', (e) => {
+        if (e.target.tagName === 'LI') {
+            const key = e.target.innerText;
+            navigator.clipboard.writeText(_localStorage[key]).then(() => {
+                setToast('#toast-success')
+            })
+        }
+    })
 
     // sessionStorageCheck展开项
     const { _sessionStorage } = await chrome.storage.local.get('_sessionStorage')
@@ -117,27 +133,42 @@ async function init() {
     }
     $('#collapseSessionStorage .textarea-format-sessionstorage').before(`<ul class="collapse-header">${header}</ul>`)
 
+    $('#collapseSessionStorage ul').on('click', (e) => {
+        if (e.target.tagName === 'LI') {
+            const key = e.target.innerText;
+            navigator.clipboard.writeText(_localStorage[key]).then(() => {
+                setToast('#toast-success')
+            })
+        }
+    })
+
     // 复制按钮
     $('#copy').on('click', async () => {
         let tabs = await chrome.tabs.query({});
         let notab = true;
         for (const tab of tabs) {
+            if(tab.id === currentTab.id) continue;
+            await chrome.scripting.executeScript({
+                target: { tabId: currentTab.id },
+                function: getWindowInfo,
+                args: []
+            });
+            await getParseLocalStorage(tab);
             // 解析目标窗口
-            const targetList = ['http://' + target.val(), 'https://' + target.val()];
+            const targetList = [target.val(), 'http://' + target.val(), 'https://' + target.val()];
             if (target.val().includes('localhost')) {
                 targetList.push('http://' + target.val().replace('localhost', '127.0.0.1'));
                 targetList.push('https://' + target.val().replace('localhost', '127.0.0.1'));
             };
             if (targetList.find((item) => tab.url.includes(item))) {
-                await chrome.scripting.executeScript({
-                    target: { tabId: currentTab.id },
-                    function: getWindowInfo,
-                    args: []
-                });
-                notab = false;
-                await getParseLocalStorage(tab);
+                if(tab && await setInfo(tab)){
+                    notab = false;
+                    toastNumber++;
+                    setToast('#toast-success');
+                }
             }
         }
+        toastNumber = 0;
         if (!notab) return;
         setToast('#toast-notarget')
     });
