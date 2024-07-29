@@ -26,9 +26,9 @@ async function getStorage(storageName) {
 }
 // 展示toast
 let toastNumber = 0;
-function setToast(id) {
+function setToast(id,txt) {
     if(id === '#toast-success'){
-        $(`${id} .toast-body`).text(`复制到${toastNumber}个窗口成功`);
+        $(`${id} .toast-body`).text(txt || `复制到${toastNumber}个窗口成功`);
     }
     $(id).show()
     setTimeout(() => {
@@ -125,7 +125,7 @@ async function init() {
         if (e.target.tagName === 'LI') {
             const key = e.target.innerText;
             navigator.clipboard.writeText(_localStorage[key]).then(() => {
-                setToast('#toast-success')
+                setToast('#toast-success',`复制${key}成功`)
             })
         }
     })
@@ -142,7 +142,7 @@ async function init() {
         if (e.target.tagName === 'LI') {
             const key = e.target.innerText;
             navigator.clipboard.writeText(_localStorage[key]).then(() => {
-                setToast('#toast-success')
+                setToast('#toast-success',`复制${key}成功`)
             })
         }
     })
@@ -189,7 +189,7 @@ async function init() {
         await getParseLocalStorage();
         getCopyScriptCode().then((code) => {
             navigator.clipboard.writeText(code).then(() => {
-                setToast('#toast-success')
+                setToast('#toast-success','复制代码成功')
             })
         })
     });
